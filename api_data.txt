@@ -1,0 +1,146 @@
+Общие сведения
+
+    URL Базового API: https://api.nasa.gov
+    Требования: API-ключ (можно получить, зарегистрировавшись на сайте NASA)
+    Формат ответов: JSON
+
+1. Astronomy Picture of the Day (APOD)
+
+Позволяет получить ежедневное изображение космоса с описанием.
+
+    URL: /planetary/apod
+
+    Пример запроса:
+
+    http
+
+GET https://api.nasa.gov/planetary/apod?api_key=YOUR_API_KEY
+
+Параметры:
+
+    api_key (обязательный): Ваш API-ключ.
+    date (опциональный): Дата в формате YYYY-MM-DD. Если не указано, вернётся изображение за сегодня.
+    hd (опциональный): Если true, вернётся изображение в высоком разрешении.
+
+Пример ответа:
+
+json
+
+    {
+      "date": "2023-11-01",
+      "explanation": "Описание изображения.",
+      "media_type": "image",
+      "title": "Название изображения",
+      "url": "https://link-to-image.jpg"
+    }
+
+2. Mars Rover Photos
+
+Возвращает фотографии, сделанные марсоходами на Марсе.
+
+    URL: /mars-photos/api/v1/rovers/{rover}/photos
+
+    Пример запроса:
+
+    http
+
+GET https://api.nasa.gov/mars-photos/api/v1/rovers/curiosity/photos?sol=1000&api_key=YOUR_API_KEY
+
+Параметры:
+
+    api_key (обязательный): Ваш API-ключ.
+    rover (обязательный): Название марсохода (curiosity, opportunity, spirit).
+    sol (обязательный): Солнечный день на Марсе.
+    camera (опциональный): Камера, используемая для съемки (FHAZ, RHAZ, NAVCAM и др.).
+    earth_date (опциональный): Дата на Земле в формате YYYY-MM-DD.
+
+Пример ответа:
+
+json
+
+    {
+      "photos": [
+        {
+          "id": 102693,
+          "sol": 1000,
+          "camera": { "name": "FHAZ", "full_name": "Front Hazard Avoidance Camera" },
+          "img_src": "https://link-to-photo.jpg",
+          "earth_date": "2015-05-30"
+        }
+      ]
+    }
+
+3. NeoWs (Near Earth Object Web Service)
+
+Предоставляет информацию о ближайших к Земле объектах (астероиды, кометы).
+
+    URL: /neo/rest/v1/feed
+
+    Пример запроса:
+
+    http
+
+GET https://api.nasa.gov/neo/rest/v1/feed?start_date=2023-11-01&end_date=2023-11-08&api_key=YOUR_API_KEY
+
+Параметры:
+
+    api_key (обязательный): Ваш API-ключ.
+    start_date (обязательный): Начальная дата в формате YYYY-MM-DD.
+    end_date (опциональный): Конечная дата в формате YYYY-MM-DD (максимум 7 дней от начальной даты).
+
+Пример ответа:
+
+json
+
+    {
+      "element_count": 15,
+      "near_earth_objects": {
+        "2023-11-01": [
+          {
+            "name": "2023 AB",
+            "nasa_jpl_url": "https://link-to-nasa-page",
+            "absolute_magnitude_h": 22.1,
+            "estimated_diameter": {
+              "meters": { "estimated_diameter_min": 100, "estimated_diameter_max": 200 }
+            },
+            "is_potentially_hazardous_asteroid": true
+          }
+        ]
+      }
+    }
+
+4. Earth API (Landsat и MODIS)
+
+Позволяет получить изображение Земли из космоса по заданным координатам.
+
+    URL: /planetary/earth/assets
+
+    Пример запроса:
+
+    http
+
+GET https://api.nasa.gov/planetary/earth/assets?lon=-95.33&lat=29.78&date=2023-11-01&dim=0.1&api_key=YOUR_API_KEY
+
+Параметры:
+
+    api_key (обязательный): Ваш API-ключ.
+    lat (обязательный): Широта.
+    lon (обязательный): Долгота.
+    date (опциональный): Дата в формате YYYY-MM-DD.
+    dim (опциональный): Размер изображения в градусах (по умолчанию 0.025).
+
+Пример ответа:
+
+json
+
+    {
+      "url": "https://link-to-earth-image.jpg",
+      "date": "2023-11-01",
+      "id": "image-id"
+    }
+
+Регистрация и получение API-ключа
+
+    Перейдите на сайт NASA Open APIs.
+    Зарегистрируйтесь и получите бесплатный API-ключ.
+    Используйте полученный ключ в запросах, добавляя параметр api_key=YOUR_API_KEY.

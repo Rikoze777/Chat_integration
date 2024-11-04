@@ -1,50 +1,36 @@
 from aiogram import Router
-from aiogram.filters import Command
-from environs import Env
 from aiogram import types
-import openai
-from sentence_transformers import SentenceTransformer
-
-from services import get_llm_response
-import services
+from services import get_llm_response, get_relevant_segment
 
 
 router = Router()
 
-user_data = {}
 
-env = Env()
-env.read_env()
+def setup_router(router: Router, openai_model: str, openrouter_model: str, instructions: str, api_data_segments, api_index):
+    @router.message(commands=["start"])
+    async def start(message: types.Message):
+        await message.answer("Привет! Я бот, который может использовать модели OpenAI и OpenRouter для написания API.")
 
-OPENAI_API_KEY = env.str("OPENAI_API_KEY")
-GPT_MODEL = env.str("GPT_MODEL")
+    @router.message(commands=["openai"])
+    async def handle_openai(message: types.Message):
+        user_query = message.text
+        await message.answer("Запрос отправлен в модель OpenAI. Пожалуйста, подождите...")
 
+        try:
+            relevant_api_data = get_relevant_segment(user_query, api_data_segments, api_index)
+            llm_response = await get_llm_response(user_query, openai_model, instructions, relevant_api_data, "openai")
+            await message.answer(llm_response)
+        except Exception as e:
+            await message.answer(f"Произошла ошибка: {e}")
 
-with open("instructions.txt", "r", encoding="utf-8") as file:
-        instructions = file.read()
+    @router.message(commands=["openrouter"])
+    async def handle_openrouter(message: types.Message):
+        user_query = message.text
+        await message.answer("Запрос отправлен в модель OpenRouter. Пожалуйста, подождите...")
 
-
-with open("api_data.txt", "r", encoding="utf-8") as file:
-    api_data = file.read()
-
-
-openai.api_key = OPENAI_API_KEY
-model = SentenceTransformer('sentence-transformers/paraphrase-MiniLM-L6-v2')
-api_data_segments, api_index, api_embeddings = services.load_and_index_api_data()
-
-
-@router.message(Command('start'))
-async def send_welcome(message: types.Message):
-    await message.reply("Привет! Отправь свой запрос, и я передам его в модель.")
-
-
-@router.message()
-async def handle_message(message: types.Message):
-    user_query = message.text
-    await message.answer("Запрос отправлен в LLM. Пожалуйста, подождите...")
-
-    try:
-        llm_response = await get_llm_response(user_query, model, instructions, api_index, api_data_segments)
-        await message.answer(llm_response)
-    except Exception as e:
-        await message.answer(f"Произошла ошибка: {e}")
+        try:
+            relevant_api_data = get_relevant_segment(user_query, api_data_segments, api_index)
+            llm_response = await get_llm_response(user_query, openrouter_model, instructions, relevant_api_data, "openrouter")
+            await message.answer(llm_response)
+        except Exception as e:
+            await message.answer(f"Произошла ошибка: {e}")
