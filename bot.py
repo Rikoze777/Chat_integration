@@ -1,33 +1,28 @@
 import asyncio
 import handlers
-from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.memory import MemoryStorage
-from environs import Env
-from aiogram.types import Router
-
 import services
+from aiogram import Bot, Dispatcher
+from environs import Env
+from aiogram import Router
+
+env = Env()
+env.read_env()
+TELEGRAM_TOKEN = env.str("TELEGRAM_TOKEN")
+OPENAI_MODEL = env.str("GPT_MODEL", "gpt-3.5-turbo")
+OPENROUTER_MODEL = env.str("OPENROUTER_MODEL", "liquid/lfm-40b:free")
 
 
 async def main():
-    env = Env()
-    env.read_env()
-    TELEGRAM_TOKEN = env.str("TELEGRAM_TOKEN")
-    openai_model = env.str("GPT_MODEL", "gpt-3.5-turbo")
-    openrouter_model = env.str("OPENROUTER_MODEL", "liquid/lfm-40b:free")
-
     bot = Bot(token=TELEGRAM_TOKEN)
-    dp = Dispatcher(bot)
+    dp = Dispatcher()
     router = Router()
 
-
-    with open("instructions.txt", "r", encoding="utf-8") as file:
+    with open("instruction.txt", "r") as file:
         instructions = file.read()
-
 
     api_data_segments, api_index = services.load_and_index_api_data()
 
-
-    handlers.setup_router(router, openai_model, openrouter_model, instructions, api_data_segments, api_index)
+    handlers.setup_router(router, OPENAI_MODEL, OPENROUTER_MODEL, instructions, api_data_segments, api_index)
     dp.include_router(router)
 
     await dp.start_polling(bot)

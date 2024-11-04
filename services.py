@@ -1,8 +1,9 @@
+import json
 import faiss
-import openai
 import requests
 from sentence_transformers import SentenceTransformer
 from environs import Env
+from openai import OpenAI
 
 
 env = Env()
@@ -33,8 +34,10 @@ async def get_llm_response(prompt: str, model: str, instructions: str, api_data:
     full_prompt = f"{instructions}\n\n{api_data}\n\n{prompt}"
 
     if provider == "openai":
-        openai.api_key = OPENAI_API_KEY
-        response = openai.ChatCompletion.create(
+        client = OpenAI(
+            api_key=OPENAI_API_KEY,
+        )
+        response = client.chat.completions.create(
             model=model,
             messages=[{"role": "system", "content": full_prompt}]
         )
@@ -42,14 +45,23 @@ async def get_llm_response(prompt: str, model: str, instructions: str, api_data:
 
     elif provider == "openrouter":
         headers = {"Authorization": f"Bearer {OPENROUTER_API_KEY}"}
-        data = {
+        data={
             "model": model,
-            "prompt": full_prompt
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "top_p": 1,
+            "temperature": 1,
+            "frequency_penalty": 0,
+            "presence_penalty": 0,
+            "repetition_penalty": 1,
+            "top_k": 0,
+            
         }
-        response = requests.post("https://api.openrouter.com/v1/completions", headers=headers, json=data)
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
         
         if response.status_code == 200:
-            return response.json().get("choices")[0].get("text").strip()
+            return response.json()['choices'][0]['message']['content']
         else:
             raise Exception(f"Ошибка OpenRouter: {response.status_code} - {response.text}")
 
