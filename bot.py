@@ -10,6 +10,7 @@ env.read_env()
 TELEGRAM_TOKEN = env.str("TELEGRAM_TOKEN")
 OPENAI_MODEL = env.str("GPT_MODEL", "gpt-3.5-turbo")
 OPENROUTER_MODEL = env.str("OPENROUTER_MODEL", "liquid/lfm-40b:free")
+GROK_MODEL = env.str("GROK_MODEL", "grok-beta")
 
 
 async def main():
@@ -22,7 +23,7 @@ async def main():
 
     api_data_segments, api_index = services.load_and_index_api_data()
 
-    handlers.setup_router(router, OPENAI_MODEL, OPENROUTER_MODEL, instructions, api_data_segments, api_index)
+    handlers.setup_router(router, OPENAI_MODEL, OPENROUTER_MODEL, GROK_MODEL, instructions, api_data_segments, api_index)
     dp.include_router(router)
 
     await dp.start_polling(bot)

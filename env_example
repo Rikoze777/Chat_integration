@@ -3,3 +3,5 @@ OPENAI_API_KEY= openai token
 OPENROUTER_API_KEY= openrouter token
 GPT_MODEL=gpt-3.5-turbo
 OPENROUTER_MODEL=liquid/lfm-40b:free
+GROK_API_KEY= grok api key
+GROK_MODEL='grok-beta'
