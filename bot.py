@@ -9,6 +9,7 @@ async def main():
     env = Env()
     env.read_env()
     TELEGRAM_TOKEN = env.str("TELEGRAM_TOKEN")
+
     bot = Bot(token=TELEGRAM_TOKEN)
     storage = MemoryStorage()
     dp = Dispatcher(bot=bot, storage=storage)
