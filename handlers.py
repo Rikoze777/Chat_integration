@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram import types
-from services import get_llm_response, get_relevant_segment
+from services import get_llm_response
 from aiogram.filters import Command
 import logging
 
@@ -11,12 +11,12 @@ router = Router()
 
 
 def setup_router(router: Router,
-                 openai_model: str,
-                 openrouter_model: str,
-                 grok_model:str,
                  instructions: str,
                  api_data_segments,
-                 api_index):
+                 api_index,
+                 openai_model: str | None = "gpt-3.5-turbo",
+                 openrouter_model: str | None = "liquid/lfm-40b:free",
+                 grok_model: str | None = 'grok-beta',):
     @router.message(Command("start"))
     async def start(message: types.Message):
         await message.answer("Привет! Я бот, который может использовать модели OpenAI и OpenRouter для написания API.")
