@@ -25,7 +25,4 @@ docker-compose down
 
 ## Работа с ботом
 
-1. Приветствие `/start`
-2. Вопрос к моделям OpenRouter: `/openrouter Ваш вопрос`
-3. Вопрос к моделям OpenAI: `/openai Ваш вопрос`
-4. Вопрос к моделям GROK: `/grok Ваш вопрос`
+1. Начало работы `/start`

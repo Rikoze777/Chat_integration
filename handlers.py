@@ -1,9 +1,13 @@
-from aiogram import Router
+import io
+from aiogram import Router, F
 from aiogram import types
-from services import get_llm_response
+from aiogram.fsm.context import FSMContext
+from crawler import parse_api
+from response_services import get_llm_response
 from aiogram.filters import Command
 import logging
-
+from aiogram.filters.state import State, StatesGroup
+from sql_services import parse_sql
 
 logging.basicConfig(level=logging.INFO)
 
@@ -11,60 +15,63 @@ router = Router()
 
 
 def setup_router(router: Router,
-                 instructions: str,
-                 api_data_segments,
-                 api_index,
+                 bot,
                  openai_model: str | None = "gpt-3.5-turbo",
                  openrouter_model: str | None = "liquid/lfm-40b:free",
-                 grok_model: str | None = 'grok-beta',):
+                 grok_model: str | None = 'grok-beta'):
+    
+    class FileUrlState(StatesGroup):
+        waiting_for_file = State()
+        waiting_for_url = State()
+    
     @router.message(Command("start"))
-    async def start(message: types.Message):
-        await message.answer("Привет! Я бот, который может использовать модели OpenAI и OpenRouter для написания API.")
+    async def start(message: types.Message, state: FSMContext):
+        await message.reply(
+            "Привет! Отправьте файл с расширением `.sql`, затем URL для обработки.",
+            parse_mode="Markdown",
+        )
+        await state.set_state(FileUrlState.waiting_for_file)
+    
+    @router.message(FileUrlState.waiting_for_file, F.document)
+    async def handle_file(message: types.Message, state: FSMContext):
+        file_in_io = io.BytesIO()
+        if not message.document.file_name.endswith(".sql"):
+            await message.reply("Пожалуйста, отправьте файл с расширением `.sql`.")
+            return
 
-    @router.message(Command("openai"))
-    async def handle_openai(message: types.Message):
-        user_query = message.text
-        await message.answer("Запрос отправлен в модель OpenAI. Пожалуйста, подождите...")
+        file_in_io = io.BytesIO()
+        file_info = await bot.get_file(message.document.file_id)
+        await bot.download_file(file_info.file_path, destination=file_in_io)
 
-        try:
-            relevant_api_data = get_relevant_segment(user_query, api_data_segments, api_index)
-            llm_response = await get_llm_response(user_query, openai_model, instructions, relevant_api_data, "openai")
-            
-            if llm_response is None:
-                llm_response = "Извините, не удалось получить ответ от модели."
-            
-            await message.answer(llm_response)
-        except Exception as e:
-            await message.answer(f"Произошла ошибка: {e}")
+        file_content = file_in_io.getvalue().decode("utf-8")
 
-    @router.message(Command("openrouter"))
-    async def handle_openrouter(message: types.Message):
-        user_query = message.text
+        await state.update_data(file_content=file_content)
+        await message.reply("Файл принят! Теперь отправьте URL.")
+        await state.set_state(FileUrlState.waiting_for_url)
+    
+    @router.message(FileUrlState.waiting_for_url, F.text)
+    async def handle_url(message: types.Message, state: FSMContext):
+        url = message.text.strip()
+        url_text = await parse_api(url)
+        await state.update_data(url=url)
+
+        data = await state.get_data()
+        file_content = data.get("file_content")
+        parsed_queries = parse_sql(file_content)
+
+        with open("instruction.txt", "r") as file:
+            instructions = file.read()
+        result_query = instructions + url_text + parsed_queries
+
+        await message.reply(f"URL принят: {url}")
+        await message.reply(f"SQL-файл успешно обработан! Ожидайте")
         await message.answer("Запрос отправлен в модель OpenRouter. Пожалуйста, подождите...")
-
         try:
-            relevant_api_data = get_relevant_segment(user_query, api_data_segments, api_index)
-            llm_response = await get_llm_response(user_query, openrouter_model, instructions, relevant_api_data, "openrouter")
-            
+            llm_response = await get_llm_response(result_query, openrouter_model, "openrouter")
             if llm_response is None:
-                llm_response = f"Извините, не удалось получить ответ от модели."
-            
+                    llm_response = "Извините, не удалось получить ответ от модели."
             await message.answer(llm_response)
         except Exception as e:
             await message.answer(f"Произошла ошибка: {e}")
 
-    @router.message(Command("grok"))
-    async def handle_grok(message: types.Message):
-        user_query = message.text
-        await message.answer("Запрос отправлен в модель GROK. Пожалуйста, подождите...")
-
-        try:
-            relevant_api_data = get_relevant_segment(user_query, api_data_segments, api_index)
-            llm_response = await get_llm_response(user_query, grok_model, instructions, relevant_api_data, "grok")
-            
-            if llm_response is None:
-                llm_response = f"Извините, не удалось получить ответ от модели."
-            
-            await message.answer(llm_response)
-        except Exception as e:
-            await message.answer(f"Произошла ошибка: {e}")
+        await state.clear()

@@ -1,7 +1,14 @@
-TELEGRAM_TOKEN= your TG token
-OPENAI_API_KEY= openai token
-OPENROUTER_API_KEY= openrouter token
-GPT_MODEL=gpt-3.5-turbo
-OPENROUTER_MODEL=liquid/lfm-40b:free
-GROK_API_KEY= grok api key
+TELEGRAM_TOKEN=<KEY>
+
+OPENAI_API_KEY=<KEY>
+GPT_MODEL='gpt-3.5-turbo'
+
+OPENROUTER_API_KEY=<KEY>
+OPENROUTER_MODEL='google/gemini-exp-1114'
+
+GROK_API_KEY=<KEY>
 GROK_MODEL='grok-beta'
+
+FIRECRAWL_TOKEN='<KEY>' https://www.firecrawl.dev/
+
+HUGGINGFACE_TOKEN='<KEY>'
