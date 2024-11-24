@@ -9,6 +9,11 @@ OPENROUTER_MODEL='google/gemini-exp-1114'
 GROK_API_KEY=<KEY>
 GROK_MODEL='grok-beta'
 
-FIRECRAWL_TOKEN='<KEY>' https://www.firecrawl.dev/
+FIRECRAWL_TOKEN='<KEY>' #https://www.firecrawl.dev/
 
 HUGGINGFACE_TOKEN='<KEY>'
+
+DATABASE_URL='db url'
+POSTGRES_DB='chat'
+POSTGRES_USER='postgres'
+POSTGRES_PASSWORD='postgres'

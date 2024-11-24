@@ -1,9 +1,11 @@
 import asyncio
-import handlers
+from app import handlers
 from aiogram import Bot, Dispatcher
 from environs import Env
 from aiogram import Router
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.database import get_session
 
 env = Env()
 env.read_env()
@@ -20,7 +22,8 @@ async def main():
     dp = Dispatcher()
     router = Router()
 
-    handlers.setup_router(router, bot, OPENAI_MODEL, OPENROUTER_MODEL, GROK_MODEL)
+    async for session in get_session():
+        handlers.setup_router(router, bot, session, OPENAI_MODEL, OPENROUTER_MODEL, GROK_MODEL)
     dp.include_router(router)
 
     await dp.start_polling(bot)
