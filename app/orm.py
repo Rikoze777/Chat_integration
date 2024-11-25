@@ -16,7 +16,7 @@ async def get_user(chat_id: int, session: AsyncSession) -> models.User:
 
 
 async def create_user(chat_id: int, session: AsyncSession) -> models.User | None:
-    user = get_user(chat_id, session)
+    user = await get_user(chat_id, session)
     if user:
         return user
     new_user = models.User(tg_user_id=chat_id)
@@ -24,31 +24,42 @@ async def create_user(chat_id: int, session: AsyncSession) -> models.User | None
     await session.commit()
 
 
-async def search_docs(query: str, session: AsyncSession, top_k: int = 5):
+async def search_docs(query: str, chat_id, session: AsyncSession, top_k: int = 5):
+    user = await get_user(chat_id, session)
     query_vector = embed_model.encode(query).tolist()
 
     result = await session.execute(
         """
         SELECT content, embedding <=> :query_vector AS distance
         FROM documents
+        WHERE user_id = :id
         ORDER BY distance ASC
         LIMIT :top_k
         """,
-        {"query_vector": query_vector, "top_k": top_k}
-    )
+        {"query_vector": query_vector, "id": user.id, "top_k": top_k}
+     )
     
     return result.fetchall()
 
 
-async def add_embeddings(user_id: int, content: str, embedding: np.ndarray, session: AsyncSession):
+async def add_embeddings(chat_id: int, content: str, embedding: np.ndarray, session: AsyncSession):
+    user = await get_user(chat_id, session)
     embedding_list = embedding.tolist()
-    dataset = models.Dataset(content=content, embedding=embedding_list, user_id=user_id)
+    dataset = models.Dataset(content=content, embedding=embedding_list, user_id=user.id)
     session.add(dataset)
     await session.commit()
 
 
 async def get_sql(chat_id: int, session: AsyncSession):
-    statement = select(models.SqlData).where(models.SqlData.user_id == chat_id)
+    user = await get_user(chat_id, session)
+    statement = select(models.SqlData).where(models.SqlData.user_id == user.id)
     result = await session.execute(statement)
-    user = result.scalars().first()
-    return user
+    sql = result.scalars().first()
+    return sql
+
+
+async def add_sql(chat_id: int, sql: str, session: AsyncSession):
+    user = await get_user(chat_id, session)
+    sql = models.SqlData(user_id=user.id, content=sql)
+    session.add(sql)
+    await session.commit()

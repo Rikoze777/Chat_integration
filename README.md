@@ -1,6 +1,7 @@
 # Chat_integration
 
 Телеграмм бот для написания API.
+проверка гипотез в [colab](https://colab.research.google.com/drive/1S5eyoxD0q3bIv84mbrWIq784wpUYYbBX?usp=sharing#scrollTo=IeCqRnFBnV1K)
 
 ## Установка
 
@@ -30,3 +31,8 @@ docker-compose down
 ## Работа с ботом
 
 1. Начало работы `/start`
+
+
+op.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+
+op.execute("DROP EXTENSION IF EXISTS vector;")

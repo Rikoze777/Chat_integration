@@ -1,11 +1,11 @@
 import asyncio
-from app import handlers
+import handlers
 from aiogram import Bot, Dispatcher
 from environs import Env
 from aiogram import Router
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import get_session
+from database import get_session
 
 env = Env()
 env.read_env()

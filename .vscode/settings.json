@@ -1,0 +1,6 @@
+{
+    "workbench.editor.enablePreview": true,
+    "workbench.editor.enablePreviewFromCodeNavigation": true,
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "search.searchEditor.reusePriorSearchConfiguration": false
+}

@@ -1,8 +1,8 @@
 """initial
 
-Revision ID: 927fbc99c4dd
+Revision ID: 116aecf7b101
 Revises: 
-Create Date: 2024-11-24 22:42:53.750898
+Create Date: 2024-11-25 10:49:06.898310
 
 """
 from typing import Sequence, Union
@@ -14,7 +14,7 @@ import pgvector
 
 
 # revision identifiers, used by Alembic.
-revision: str = '927fbc99c4dd'
+revision: str = '116aecf7b101'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

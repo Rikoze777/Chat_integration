@@ -16,9 +16,10 @@ class User(BaseSQLModel, table=True):
     tg_user_id: int = Field(
         title="Tg user id",
         description="User chat id from telegram",
-        sa_column=Column(BigInteger)
+        sa_column=Column(BigInteger),
     )
-    profiles: list["Dataset"] = Relationship(back_populates="user")
+    sqldatas: list["SqlData"] = Relationship(back_populates="user")
+    datasets: list["Dataset"] = Relationship(back_populates="user")
 
 
 class Dataset(BaseSQLModel, table=True):
