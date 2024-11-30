@@ -64,3 +64,8 @@ def count_tokens(
     elif isinstance(tokenizer, PreviewTokenizer):  # Gemini
         result = tokenizer.count_tokens(text)
         return result.total_tokens
+
+
+async def split_into_chunks(text: str, chunk_size: int) -> list[str]:
+    """Разбивает текст на чанки фиксированного размера."""
+    return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]

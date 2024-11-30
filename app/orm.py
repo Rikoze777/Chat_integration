@@ -24,7 +24,7 @@ async def create_user(chat_id: int, session: AsyncSession) -> models.User | None
     await session.commit()
 
 
-async def search_docs(query: str, chat_id, session: AsyncSession, top_k: int = 5):
+async def search_docs(query: str, chat_id, session: AsyncSession, top_k: int = 3):
     user = await get_user(chat_id, session)
     query_vector = embed_model.encode(query).tolist()
 
@@ -42,11 +42,13 @@ async def search_docs(query: str, chat_id, session: AsyncSession, top_k: int = 5
     return result.fetchall()
 
 
-async def add_embeddings(chat_id: int, content: str, embedding: np.ndarray, session: AsyncSession):
+async def add_chunks_to_db(chat_id: int, chunks: list[str], embeddings: list[np.ndarray], session: AsyncSession):
+    """Добавляет чанки и их эмбеддинги в базу данных."""
     user = await get_user(chat_id, session)
-    embedding_list = embedding.tolist()
-    dataset = models.Dataset(content=content, embedding=embedding_list, user_id=user.id)
-    session.add(dataset)
+    for content, embedding in zip(chunks, embeddings):
+        embedding_list = embedding.tolist()
+        dataset = models.Dataset(content=content, embedding=embedding_list, user_id=user.id)
+        session.add(dataset)
     await session.commit()
 
 
@@ -63,3 +65,18 @@ async def add_sql(chat_id: int, sql: str, session: AsyncSession):
     sql = models.SqlData(user_id=user.id, content=sql)
     session.add(sql)
     await session.commit()
+
+
+async def load_prompt(session: AsyncSession, chat_id: int, prompt: str):
+    user = await get_user(chat_id, session)
+    result = models.Instruction(user_id=user.id, content=prompt)
+    session.add(result)
+    await session.commit()
+
+
+async def fetch_prompt(session: AsyncSession, chat_id: int):
+    user = await get_user(chat_id, session)
+    statement = select(models.Instruction).where(models.Instruction.user_id == user.id)
+    result = await session.execute(statement)
+    prompt = result.scalars().first()
+    return prompt

@@ -18,17 +18,3 @@ AsyncSessionLocal = sessionmaker(
 async def get_session():
     async with AsyncSessionLocal() as session:
         yield session
-# async def get_session() -> AsyncGenerator[AsyncSession, Any]:
-#     async_session_factory = async_sessionmaker(
-#         bind=engine,
-#         autoflush=False,
-#         autocommit=False,
-#         expire_on_commit=False,
-#         class_=AsyncSession,
-#     )
-#     async with async_session_factory() as db_session:
-#         await db_session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-#         try:
-#             yield db_session
-#         except SQLAlchemyError as err:
-#             await db_session.rollback()

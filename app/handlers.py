@@ -1,4 +1,5 @@
 import io
+from app import text_services
 import orm
 from aiogram import Router, F
 from aiogram import types
@@ -36,10 +37,21 @@ def setup_router(router: Router,
     async def start(message: types.Message):
         await message.reply(
             """Для отправки .sql необходимо ввести /sql перед отправкой.
-            Для формирования базы датасета нужно отправить /docs и ссылку на апи""",
+            Для формирования базы датасета нужно отправить /docs и ссылку на апи. Для добавления инструкции введите /prompt и ваш текст инструкции""",
             parse_mode="Markdown",
         )
     
+    @router.message(Command("prompt"))
+    async def handle_sql(message: types.Message):
+        chat_user_id = message.from_user.id
+        prompt =  message.text
+
+        await orm.load_prompt(session, chat_user_id, prompt)
+        await message.reply(
+            """Ваши инструкции загружены""",
+            parse_mode="Markdown",
+        )
+
     @router.message(Command("sql"), F.document)
     async def handle_sql(message: types.Message):
         chat_user_id = message.from_user.id
@@ -62,22 +74,38 @@ def setup_router(router: Router,
         chat_user_id = message.from_user.id
         url = message.text.strip()
         cleaned_url = url.replace('/docs ', '')
+        
         url_text = await parse_api(cleaned_url)
-        embedding = np.random.rand(1024)
-        await orm.add_embeddings(chat_user_id, url_text, embedding, session)
-
+        
+        chunk_size = 1024
+        chunks = await text_services.split_into_chunks(url_text, chunk_size)
+        embeddings = [np.random.rand(1024) for _ in chunks]
+        
+        await orm.add_chunks_to_db(chat_user_id, chunks, embeddings, session)
         await message.reply(f"URL принят: {url}")
 
     @router.message()
     async def handle_query(message: types.Message):
         chat_user_id = message.from_user.id
-        results = await orm.search_docs(message.text, session)
-        response = "\n".join([f"{row['content']} (distance: {row['distance']})" for row in results])
-        await message.reply(response if results else "Ничего не найдено.")
-        sql = await orm.get_sql(chat_user_id, session)
-        with open("../instruction.txt", "r") as file:
-            instructions = file.read()
-        result = instructions + message.text + response + str(sql.content)
+        docs = await orm.search_docs(message.text, session)
+        instructions = await orm.fetch_prompt(session, chat_user_id)
+        if instructions:
+            prompt = f'Instrucrions: {instructions.content}'
+        else:
+            prompt = ''
+        if docs:
+            response = "\n".join([f"{row['content']} (distance:                 {row['distance']})" for row in docs])
+            await message.reply(response if docs else "Документы АПИ не найдены.")
+            sql = await orm.get_sql(chat_user_id, session)
+            if sql:
+                sql_doc = str(sql.content)
+            else:
+                sql_doc = ''
+
+            result = message.text + prompt + response + sql_doc
+
+        else:
+            result = message.text + prompt
         try:
             llm_response = await get_llm_response(result, openrouter_model, "openrouter")
             if llm_response is None:

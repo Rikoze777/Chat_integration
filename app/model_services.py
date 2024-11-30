@@ -2,6 +2,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
+# Попытка инференса мелкой модели для раг. на код бота не влияет
 torch.cuda.empty_cache()
 
 model_name = "Qwen/Qwen2.5-Coder-0.5B-Instruct"

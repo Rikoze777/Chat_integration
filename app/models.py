@@ -20,6 +20,7 @@ class User(BaseSQLModel, table=True):
     )
     sqldatas: list["SqlData"] = Relationship(back_populates="user")
     datasets: list["Dataset"] = Relationship(back_populates="user")
+    instruction: "Instruction" = Relationship(back_populates="user")
 
 
 class Dataset(BaseSQLModel, table=True):
@@ -41,3 +42,12 @@ class SqlData(BaseSQLModel, table=True):
 
     user_id: int = Field(foreign_key="user.id")
     user: "User" = Relationship(back_populates="sqldatas")
+
+
+class Instruction(BaseSQLModel, table=True):
+    __tablename__ = 'instruction'
+
+    content: str = Field(description="Content of the instruction")
+
+    user_id: int = Field(foreign_key="user.id")
+    user: "User" = Relationship(back_populates="instruction")
