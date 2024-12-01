@@ -16,14 +16,13 @@ GROK_MODEL = env.str("GROK_MODEL", "grok-beta")
 HUGGINGFACE_TOKEN = env.str("HUGGINGFACE_TOKEN")
 
 
-
 async def main():
     bot = Bot(token=TELEGRAM_TOKEN)
     dp = Dispatcher()
     router = Router()
 
     async for session in get_session():
-        handlers.setup_router(router, bot, session, OPENAI_MODEL, OPENROUTER_MODEL, GROK_MODEL)
+        handlers.setup_router(router, bot, session)
     dp.include_router(router)
 
     await dp.start_polling(bot)

@@ -1,5 +1,5 @@
 import io
-from app import text_services
+import text_services
 import orm
 from aiogram import Router, F
 from aiogram import types
@@ -18,26 +18,63 @@ router = Router()
 
 def setup_router(router: Router,
                  bot,
-                 session: AsyncSession,
-                 openai_model: str | None = "gpt-3.5-turbo",
-                 openrouter_model: str | None = "liquid/lfm-40b:free",
-                 grok_model: str | None = 'grok-beta'):
+                 session: AsyncSession):
     
+    async def process_request(model_name: str, message: types.Message, session: AsyncSession):
+        chat_user_id = message.from_user.id
+        user_query = message.text.strip().replace(f"/{model_name} ", "")
+        docs = await orm.search_docs(user_query, chat_user_id, session)
+        instructions = await orm.fetch_prompt(session, chat_user_id)
+        
+        prompt = f"Instrucrions: {instructions.content}" if instructions else ""
+        docs_response = "\n".join(
+            [f"{row['content']} (distance: {row['distance']})" for row in docs]
+        ) if docs else ""
+        
+        sql = await orm.get_sql(chat_user_id, session)
+        sql_doc = str(sql.content) if sql else ""
+        full_input = user_query + docs_response + sql_doc
+        
+        try:
+            llm_response = await get_llm_response(full_input, prompt, model_name)
+            if not llm_response:
+                llm_response = "Извините, не удалось получить ответ от модели."
+            await message.answer(llm_response)
+        except Exception as e:
+            await message.answer(f"Произошла ошибка: {e}")
 
     @router.message(Command("start"))
     async def start(message: types.Message):
         chat_user_id = message.from_user.id
         user = await orm.create_user(chat_user_id, session)
         await message.reply(
-            f"Привет, {user}! Это твой апи строитель. Не забудь отправить .sql и url перед запросом",
+            f"Привет, {user.tg_user_id}! Это твой ассистент. Не забудь просмотреть функционал в /help",
             parse_mode="Markdown",
         )
 
     @router.message(Command("help"))
-    async def start(message: types.Message):
+    async def help(message: types.Message):
         await message.reply(
-            """Для отправки .sql необходимо ввести /sql перед отправкой.
-            Для формирования базы датасета нужно отправить /docs и ссылку на апи. Для добавления инструкции введите /prompt и ваш текст инструкции""",
+            """*Доступные команды:*
+        
+            📜 *Основные команды:*
+            - `/start` — начать работу с ботом.
+            - `/help` — показать справку.
+
+            💾 *Работа с SQL:*
+            - `/sql` — загрузите файл `.sql` и подпишите /sql.
+
+            📚 *Работа с документами:*
+            - `/docs [ссылка]` — отправьте ссылку на API, чтобы сформировать базу датасета.
+
+            ✏️ *Добавление инструкций:*
+            - `/prompt [текст]` — добавьте свои инструкции для обработки запросов.
+
+            🤖 *Запросы к моделям:*
+            - `/grok` — использовать модель *Grok*.
+            - `/openrouter` — использовать модель *OpenRouter*.
+            - `/openai` — использовать модель *OpenAI*.
+            """,
             parse_mode="Markdown",
         )
     
@@ -84,34 +121,14 @@ def setup_router(router: Router,
         await orm.add_chunks_to_db(chat_user_id, chunks, embeddings, session)
         await message.reply(f"URL принят: {url}")
 
-    @router.message()
-    async def handle_query(message: types.Message):
-        chat_user_id = message.from_user.id
-        docs = await orm.search_docs(message.text, session)
-        instructions = await orm.fetch_prompt(session, chat_user_id)
-        if instructions:
-            prompt = f'Instrucrions: {instructions.content}'
-        else:
-            prompt = ''
-        if docs:
-            response = "\n".join([f"{row['content']} (distance:                 {row['distance']})" for row in docs])
-            await message.reply(response if docs else "Документы АПИ не найдены.")
-            sql = await orm.get_sql(chat_user_id, session)
-            if sql:
-                sql_doc = str(sql.content)
-            else:
-                sql_doc = ''
+    @router.message(Command("grok"))
+    async def handle_grok(message: types.Message):
+        await process_request("grok", message, session)
 
-            result = message.text + prompt + response + sql_doc
+    @router.message(Command("openrouter"))
+    async def handle_openrouter(message: types.Message):
+        await process_request("openrouter", message, session)
 
-        else:
-            result = message.text + prompt
-        try:
-            llm_response = await get_llm_response(result, openrouter_model, "openrouter")
-            if llm_response is None:
-                    llm_response = "Извините, не удалось получить ответ от модели."
-            await message.answer(llm_response)
-        except Exception as e:
-            await message.answer(f"Произошла ошибка: {e}")
-
-
+    @router.message(Command("openai"))
+    async def handle_openai(message: types.Message):
+        await process_request("openai", message, session)

@@ -1,5 +1,5 @@
 import numpy as np
-from sqlalchemy import select
+from sqlalchemy import select, text
 import models
 from sqlalchemy.ext.asyncio import AsyncSession
 from sentence_transformers import SentenceTransformer
@@ -24,22 +24,32 @@ async def create_user(chat_id: int, session: AsyncSession) -> models.User | None
     await session.commit()
 
 
-async def search_docs(query: str, chat_id, session: AsyncSession, top_k: int = 3):
-    user = await get_user(chat_id, session)
-    query_vector = embed_model.encode(query).tolist()
+async def search_docs(query: str, chat_id: int, session: AsyncSession, top_k: int = 3):
+    try:
+        async with session.begin(): 
+            user = await get_user(chat_id, session)
+            if user is None:
+                return []
 
-    result = await session.execute(
-        """
-        SELECT content, embedding <=> :query_vector AS distance
-        FROM documents
-        WHERE user_id = :id
-        ORDER BY distance ASC
-        LIMIT :top_k
-        """,
-        {"query_vector": query_vector, "id": user.id, "top_k": top_k}
-     )
-    
-    return result.fetchall()
+            query_vector = embed_model.encode(query).tolist()
+            stmnt = text("""
+                SELECT content, embedding <=> :query_vector AS distance
+                FROM documents
+                WHERE user_id = :id
+                ORDER BY distance ASC
+                LIMIT :top_k
+            """)
+            result = await session.execute(stmnt, {
+                "query_vector": query_vector,
+                "id": user.id,
+                "top_k": top_k
+            })
+            docs = result.fetchall()
+            return docs
+    except Exception as e:
+        print(f"Error in search_docs: {e}")
+        await session.rollback()
+        return []
 
 
 async def add_chunks_to_db(chat_id: int, chunks: list[str], embeddings: list[np.ndarray], session: AsyncSession):

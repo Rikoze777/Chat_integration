@@ -13,7 +13,7 @@ FIRECRAWL_TOKEN='<KEY>' #https://www.firecrawl.dev/
 
 HUGGINGFACE_TOKEN='<KEY>'
 
-DATABASE_URL='db url'
+DATABASE_URL=postgresql+asyncpg://riko:riko@127.0.0.1:5435/chat
 POSTGRES_DB='chat'
 POSTGRES_USER='postgres'
 POSTGRES_PASSWORD='postgres'

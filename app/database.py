@@ -1,10 +1,7 @@
 import os
-from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine
 from sqlmodel.ext.asyncio.session import AsyncSession
-from typing import Any
-from sqlalchemy import text
-from collections.abc import AsyncGenerator
+
 from dotenv import load_dotenv
 from sqlalchemy.orm import sessionmaker
 

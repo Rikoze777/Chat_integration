@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  bot:
+  chat:
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,3 +10,31 @@ services:
     volumes:
       - ./:/app
     restart: always
+    depends_on:
+      - db
+    networks:
+      - chat_bot
+
+  db:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432" #5435 output port for control. Change it here and in db url in env if you want
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-d", "${POSTGRES_DB}", "-U", "${POSTGRES_USER}"]
+      interval: 3s
+      timeout: 30s
+      retries: 3
+    networks:
+      - chat_bot
+
+volumes:
+  postgres_data:
+
+networks:
+  chat_bot:
